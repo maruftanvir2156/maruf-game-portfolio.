@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  base: './',
   server: {
     host: '0.0.0.0', // Listens on all interfaces for USB / ADB connections
     port: 3001,
