@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>SPHERE VELOCITY - 3D Rolling-Ball Platformer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/index-CoYdfFq0.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-zf1IifYU.css">
+</head>
+<body>
+  <!-- High-Resolution Top-Left Forensic HTML Telemetry Panel (F3 to toggle) -->
+  <div id="debug-overlay" style="position: fixed; top: 10px; left: 10px; z-index: 99999; background: rgba(0, 0, 0, 0.88); color: #00f0ff; font-family: monospace; font-size: 12px; padding: 10px 14px; border: 1px solid #00f0ff; border-radius: 6px; pointer-events: none; line-height: 1.6; display: none;">
+    <div style="font-weight:bold; border-bottom:1px solid #00f0ff; margin-bottom:4px; padding-bottom:2px; font-size:11px;">FORENSIC TELEMETRY (F3=toggle, F4=colliders)</div>
+    <div>FPS: <span id="dbg-fps" style="color:#00ff88; font-weight:bold;">60</span> | Frame: <span id="dbg-ftime">16.6ms</span></div>
+    <div>Phys: <span id="dbg-ptime">0.10ms</span> | Ray: <span id="dbg-rtime">0.05ms</span></div>
+    <div>Steer: <span id="dbg-steer">0.00</span> | Fwd: <span id="dbg-fwd">0.00</span></div>
+    <div>Vel: <span id="dbg-vel">[0,0,0]</span></div>
+    <div>Pos: <span id="dbg-pos">[0,4,0]</span></div>
+    <div>Grounded: <span id="dbg-gnd" style="color:#00ff88;">YES</span> | Normal: <span id="dbg-norm">[0,1,0]</span></div>
+  </div>
+
+  <!-- Mobile Portrait Viewport Frame -->
+  <div id="app-frame">
+    <!-- Smooth Respawn Screen Fade Overlay -->
+    <div id="screen-fade" style="position: absolute; inset: 0; background: #000; opacity: 0; transition: opacity 0.5s ease; pointer-events: none; z-index: 99990;"></div>
+
+    <!-- 3D Canvas Container -->
+    <div id="game-container"></div>
+
+    <!-- UI Overlay -->
+    <div id="ui-root">
+    <!-- Touch Control Drag Area (Mobile steering) -->
+    <div id="touch-controls" class="touch-zone">
+      <div id="touch-joystick" class="touch-joystick hidden">
+        <div class="joystick-base"></div>
+        <div id="joystick-knob" class="joystick-knob"></div>
+      </div>
+      <div class="touch-hint">Drag Left / Right to Steer (Or WASD / Arrow Keys)</div>
+    </div>
+
+    <!-- Gameplay HUD -->
+    <div id="hud" class="hud-layer hidden">
+      <!-- Top Bar -->
+      <div class="hud-top">
+        <button id="btn-pause" class="hud-btn" aria-label="Pause">
+          <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+        </button>
+        <div class="hud-level-badge">
+          <span class="level-label">LEVEL</span>
+          <span id="hud-level-num">1</span>
+        </div>
+        <div class="hud-collectible">
+          <div class="gem-icon"></div>
+          <span id="hud-coin-count">0</span>
+        </div>
+      </div>
+
+      <!-- Level Progress Bar -->
+      <div class="hud-progress-container">
+        <div class="progress-track">
+          <div id="hud-progress-bar" class="progress-fill"></div>
+        </div>
+        <div class="progress-nodes">
+          <span class="node start-node">S</span>
+          <span id="checkpoint-node-1" class="node cp-node">1</span>
+          <span class="node finish-node">★</span>
+        </div>
+      </div>
+
+      <!-- Speedometer & Zone Indicator -->
+      <div class="hud-bottom">
+        <div class="hud-speedometer">
+          <span id="hud-speed-val">0</span>
+          <span class="speed-unit">KM/H</span>
+        </div>
+        <div id="hud-zone-tag" class="hud-zone-tag">SKY HAVEN</div>
+      </div>
+    </div>
+
+    <!-- Main Menu Screen -->
+    <div id="screen-main-menu" class="screen-overlay active">
+      <div class="menu-card glass-panel">
+        <div class="title-container">
+          <span class="super-title">PORTRAIT MOBILE ROLLING PLATFORMER</span>
+          <h1 class="game-title">SPHERE <span class="accent-text">VELOCITY</span></h1>
+          <p class="game-subtitle">Sky-High 3D Precision Rolling</p>
+        </div>
+
+        <div class="skin-preview-card">
+          <div id="ball-skin-preview" class="skin-sphere neon"></div>
+          <div class="skin-info">
+            <span class="skin-label">CURRENT BALL</span>
+            <span id="skin-name-display" class="skin-name">CYBER NEON</span>
+          </div>
+          <button id="btn-open-skins" class="btn-skin-selector">CHANGE SKIN</button>
+        </div>
+
+        <div class="menu-actions">
+          <button id="btn-play" class="btn-primary">
+            <span>PLAY GAME</span>
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button id="btn-level-select" class="btn-secondary">SELECT LEVEL</button>
+          <button id="btn-open-settings" class="btn-secondary">SETTINGS & GYRO</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Select Modal -->
+    <div id="screen-level-select" class="screen-overlay hidden">
+      <div class="modal-card glass-panel">
+        <div class="modal-header">
+          <h2>SELECT LEVEL</h2>
+          <button id="btn-close-levels" class="btn-close">&times;</button>
+        </div>
+        <div id="level-grid" class="level-grid"></div>
+      </div>
+    </div>
+
+    <!-- Skin Customizer Modal -->
+    <div id="screen-skin-customizer" class="screen-overlay hidden">
+      <div class="modal-card glass-panel">
+        <div class="modal-header">
+          <h2>BALL CUSTOMIZATION</h2>
+          <button id="btn-close-skins" class="btn-close">&times;</button>
+        </div>
+        <div id="skin-grid" class="skin-grid"></div>
+      </div>
+    </div>
+
+    <!-- Pause Menu Modal -->
+    <div id="screen-pause" class="screen-overlay hidden">
+      <div class="modal-card glass-panel pause-card">
+        <h2>PAUSED</h2>
+        <div class="pause-actions">
+          <button id="btn-resume" class="btn-primary">RESUME</button>
+          <button id="btn-restart" class="btn-secondary">RESTART LEVEL</button>
+          <button id="btn-pause-settings" class="btn-secondary">SETTINGS</button>
+          <button id="btn-main-menu" class="btn-secondary">MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="screen-settings" class="screen-overlay hidden">
+      <div class="modal-card glass-panel">
+        <div class="modal-header">
+          <h2>SETTINGS</h2>
+          <button id="btn-close-settings" class="btn-close">&times;</button>
+        </div>
+        <div class="settings-content" style="display:flex; flex-direction:column; gap:16px; width:100%; padding:10px 0;">
+          <div class="setting-row" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <span style="font-weight:600;">Audio Effects</span>
+            <button id="btn-toggle-audio" class="btn-secondary" style="padding:6px 14px; margin:0;">SOUND: ON</button>
+          </div>
+          <div class="setting-row" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <span style="font-weight:600;">Gyroscope Steering</span>
+            <button id="btn-gyro-toggle" class="btn-secondary" style="padding:6px 14px; margin:0;">CALIBRATE & ENABLE</button>
+          </div>
+          <div class="setting-row" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <span style="font-weight:600;">Developer Telemetry</span>
+            <button id="btn-toggle-telemetry" class="btn-secondary" style="padding:6px 14px; margin:0;">TELEMETRY: HIDDEN</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Victory Screen Modal -->
+    <div id="screen-victory" class="screen-overlay hidden">
+      <div class="modal-card glass-panel victory-card">
+        <div class="victory-header">
+          <span class="victory-subtitle">LEVEL COMPLETED!</span>
+          <h2 id="victory-level-name">FIRST ROLL</h2>
+        </div>
+        <div class="star-rating">
+          <span class="star" id="star-1">★</span>
+          <span class="star" id="star-2">★</span>
+          <span class="star" id="star-3">★</span>
+        </div>
+        <div class="victory-stats">
+          <div class="stat-box">
+            <span class="stat-value" id="victory-time">00:00</span>
+            <span class="stat-label">TIME</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-value" id="victory-coins">0/0</span>
+            <span class="stat-label">COINS</span>
+          </div>
+        </div>
+        <div class="victory-actions">
+          <button id="btn-next-level" class="btn-primary">NEXT LEVEL</button>
+          <button id="btn-replay" class="btn-secondary">REPLAY</button>
+          <button id="btn-victory-menu" class="btn-secondary">MENU</button>
+        </div>
+      </div>
+    </div> <!-- /ui-root -->
+  </div> <!-- /app-frame -->
+
+</body>
+</html>
