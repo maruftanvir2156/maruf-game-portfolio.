@@ -297,6 +297,16 @@ Animation Loop: OK`);
 
       const physicsRes = this.physics.update(dt, steer, forward, jump, this.input.isTouching);
 
+      // ── Secondary fall boundary guard ─────────────────────────────────────
+      // The physics engine's own kill plane fires at y < -12. This earlier
+      // check at y < -2 catches the ball before it falls far off-screen,
+      // giving an instant, visually clean respawn from the last checkpoint.
+      // Uses this.physics.position (authoritative state) not the visual mesh.
+      if (!physicsRes.hasRespawned && this.physics.position.y < -2.0) {
+        this.physics.respawn();
+        physicsRes.hasRespawned = true;
+      }
+
       // Track always runs along Z-axis; centerline is X=0
       this.cameraController.setTrackCenterX(0);
 
