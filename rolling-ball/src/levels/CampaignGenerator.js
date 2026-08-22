@@ -66,6 +66,8 @@ export class CampaignGenerator {
 
       if (id === 2) {
         // Level 2: Cloud Curves (World 1: Sky Haven)
+        // Fix: landing strips after boost ramps are wider (16) and longer (+15 units)
+        // so a nitro-launched ball always lands on solid track, not in empty sky.
         levels.push({
           id: 2,
           title: 'CLOUD CURVES',
@@ -74,14 +76,18 @@ export class CampaignGenerator {
           totalCoins: 25,
           initialZone: 'WORLD_1_SKY_HAVEN',
           segments: [
-            { type: 'STRAIGHT',     length: 35, width: 10, coins: 5 },
-            { type: 'GENTLE_CURVE', angleDeg: 15, turnDir: -1, width: 10 },
-            { type: 'SLOPE_RAMP',   length: 22, riseHeight: 2.0, width: 10, nitroBoost: true },
-            { type: 'STRAIGHT',     length: 40, width: 10, coins: 8 },
-            { type: 'GENTLE_CURVE', angleDeg: 15, turnDir: 1, width: 10 },
+            { type: 'STRAIGHT',     length: 35,  width: 12, coins: 5 },
+            { type: 'GENTLE_CURVE', angleDeg: 15, turnDir: -1, width: 12 },
+            // Ramp 1: boost launch — landing is now 55 units long and 16 wide
+            { type: 'SLOPE_RAMP',   length: 22,  riseHeight: 2.0, width: 12, nitroBoost: true },
+            { type: 'STRAIGHT',     length: 55,  width: 16, coins: 8 },
+            { type: 'GENTLE_CURVE', angleDeg: 15, turnDir: 1, width: 14 },
             { type: 'CHECKPOINT',   index: 1 },
-            { type: 'SLOPE_RAMP',   length: 24, riseHeight: 2.5, width: 10, nitroBoost: true },
-            { type: 'STRAIGHT',     length: 45, width: 10, coins: 12 },
+            // Ramp 2: boost launch — landing is now 60 units long and 16 wide
+            { type: 'SLOPE_RAMP',   length: 24,  riseHeight: 2.5, width: 12, nitroBoost: true },
+            { type: 'STRAIGHT',     length: 60,  width: 16, coins: 12 },
+            // Buffer straight before portal prevents gap at end of level
+            { type: 'STRAIGHT',     length: 25,  width: 14 },
             { type: 'PORTAL_RING',  targetZone: 'WORLD_1_SKY_HAVEN' },
             { type: 'FINISH_GATE' }
           ]

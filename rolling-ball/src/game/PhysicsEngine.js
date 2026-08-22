@@ -305,8 +305,9 @@ export class PhysicsEngine {
       }
     }
 
-    // If ANY ray detects track geometry within radius + 0.35m
-    if (closestHit && minDist <= this.radius + 0.35) {
+    // If ANY ray detects track geometry within radius + 0.8m
+    // (expanded from 0.35 so fast-moving balls over ramp lips are still grounded)
+    if (closestHit && minDist <= this.radius + 0.8) {
       this.isGrounded = true;
 
       if (closestHit.face) {
@@ -316,10 +317,12 @@ export class PhysicsEngine {
       }
 
       // Precise Y-Clamping & Negative Y Velocity Cancellation
+      // Tolerance widened 0.15 → 0.30 so high-speed balls snap to surface
+      // rather than passing through the top face at speed.
       const targetY = closestHit.point.y + this.radius;
       const distY   = this.position.y - targetY;
 
-      if (distY < 0.15 && this.velocity.y <= 0.2) {
+      if (distY < 0.30 && this.velocity.y <= 0.2) {
         this.position.y = targetY;
         if (this.velocity.y < 0) this.velocity.y = 0;
       }
