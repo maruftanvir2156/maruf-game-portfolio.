@@ -186,7 +186,7 @@ export class PhysicsEngine {
     this._camRight.crossVectors(this._camDir, this._camUp).normalize();
 
     // 3. Dynamics & Acceleration
-    const maxSpeed = this.boostTimer > 0 ? 44 : 26;
+    const maxSpeed = this.boostTimer > 0 ? 44 : 32;  // raised 26 → 32 for better feel
     const accel    = this.boostTimer > 0 ? 45 : 22;
     const steerPwr = 22;
 
@@ -198,6 +198,15 @@ export class PhysicsEngine {
       if (slopeFactor > 0.02) {
         this._drvDir.set(0, -1, 0).projectOnPlane(this.groundNormal).normalize();
         this.velocity.addScaledVector(this._drvDir, Math.abs(this.gravity) * slopeFactor * dt * 1.2);
+      }
+
+      // Ramp-adherence force: push ball into slope surface so it doesn't bounce off.
+      // Applied as an extra downward impulse proportional to slope steepness.
+      if (slopeFactor > 0.02) {
+        // Add a velocity component in the -groundNormal direction (into the surface).
+        // Strength = 1.5× gravity × slope steepness. At 45° slope (slopeFactor≈0.29)
+        // this gives ~8 m/s² additional surface-following force.
+        this.velocity.addScaledVector(this.groundNormal, -Math.abs(this.gravity) * 1.5 * slopeFactor * dt);
       }
 
       // Drive acceleration
@@ -222,9 +231,10 @@ export class PhysicsEngine {
         }
       }
 
-      // Lateral damping — softer so steering can build up
+      // Lateral damping — frame-rate-independent exp-decay so releasing keys
+      // produces an immediate, snappy stop (no ice-sliding)
       if (inputSteer === 0) {
-        this.velocity.x = THREE.MathUtils.lerp(this.velocity.x, 0, 0.2);
+        this.velocity.x *= Math.exp(-18 * dt); // tau ≈ 56ms at 120Hz → ~95% stop in 0.17s
       }
       if (forwardAccel === 0) {
         // Subtle rolling friction when idling

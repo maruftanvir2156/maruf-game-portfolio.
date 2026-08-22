@@ -76,23 +76,27 @@ export class TrackBuilder {
       this.woodTex = null;
     }
 
-    // ── Sky Haven PBR Materials ───────────────────────────────────────────────
+    // ── Sky Haven PBR Materials — DoubleSide + emissive so no surface ever goes black ─
     this.matTrack = new THREE.MeshStandardMaterial({
-      map: this.woodTex, roughness: 0.50, metalness: 0.10
+      map: this.woodTex, roughness: 0.40, metalness: 0.10,
+      side: THREE.DoubleSide,
+      emissive: new THREE.Color(0x112233), emissiveIntensity: 0.3
     });
     this.matRamp = new THREE.MeshStandardMaterial({
-      color: 0x00c8ff, emissive: 0x0066aa, emissiveIntensity: 0.45,
-      metalness: 0.6, roughness: 0.25
+      color: 0x00c8ff, emissive: new THREE.Color(0x0066aa), emissiveIntensity: 0.45,
+      metalness: 0.6, roughness: 0.25, side: THREE.DoubleSide
     });
     this.matBarrier = new THREE.MeshStandardMaterial({
-      map: this.hazardTex, metalness: 0.4, roughness: 0.3
+      map: this.hazardTex, metalness: 0.4, roughness: 0.3,
+      side: THREE.DoubleSide,
+      emissive: new THREE.Color(0x110a00), emissiveIntensity: 0.2
     });
     this.matHazard = this.matBarrier;
     this.matGoldTrim = new THREE.MeshStandardMaterial({
-      color: 0xffd700, metalness: 0.8, roughness: 0.2
+      color: 0xffd700, metalness: 0.8, roughness: 0.2, side: THREE.DoubleSide
     });
     this.matRailGlow = new THREE.MeshStandardMaterial({
-      color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.8,
+      color: 0x00f0ff, emissive: new THREE.Color(0x00f0ff), emissiveIntensity: 0.8,
       metalness: 0.9, roughness: 0.08, depthWrite: false
     });
     this.matDebugWire = new THREE.MeshBasicMaterial({
@@ -183,11 +187,18 @@ export class TrackBuilder {
 
   // ── 2. Slope ramp (rotated BoxGeometry — flat face normals, reliable raycast) ──
   createSlopeRamp(startPos, heading, length = 20, rise = 1.5, width = 14, skinKey = null) {
-    const angle       = Math.atan2(rise, length);
-    const surfaceLen  = Math.sqrt(length * length + rise * rise);
+    // SEAM_OVERLAP: extend ramp 0.15m back into the preceding segment so the ramp
+    // surface covers the angular gap at the straight→ramp joint. Without this the
+    // ball's downward raycast can catch the vertical end-face of the straight box,
+    // causing a physics "bump" that launches the ball into the air.
+    const SEAM_OVERLAP = 0.15;
+    const effectiveLength  = length + SEAM_OVERLAP;
+    const angle       = Math.atan2(rise, effectiveLength);
+    const surfaceLen  = Math.sqrt(effectiveLength * effectiveLength + rise * rise);
     const mat         = (skinKey && SEGMENT_SKINS[skinKey]) ? SEGMENT_SKINS[skinKey].getMaterial() : this.matRamp;
 
-    // Helper to create one rotated box oriented along heading + slope
+    // Helper to create one rotated box oriented along heading + slope.
+    // The box is shifted back by SEAM_OVERLAP/2 so it straddles the joint.
     const makeBox = (w, h, l, xOff, yOff) => {
       const geo  = new THREE.BoxGeometry(w, h, l);
       const mesh = new THREE.Mesh(geo, mat);
@@ -195,9 +206,9 @@ export class TrackBuilder {
       mesh.rotation.y = heading;
       mesh.rotation.x = -angle;
       mesh.position.set(
-        startPos.x + Math.sin(heading) * length / 2 - Math.cos(heading) * xOff,
+        startPos.x + Math.sin(heading) * (effectiveLength / 2 - SEAM_OVERLAP) - Math.cos(heading) * xOff,
         startPos.y + rise / 2 + yOff,
-        startPos.z + Math.cos(heading) * length / 2 + Math.sin(heading) * xOff
+        startPos.z + Math.cos(heading) * (effectiveLength / 2 - SEAM_OVERLAP) + Math.sin(heading) * xOff
       );
       mesh.receiveShadow = mesh.castShadow = true;
       return mesh;
@@ -225,6 +236,8 @@ export class TrackBuilder {
 
     this._flushDebug();
 
+    // End position uses the ORIGINAL length (not effectiveLength) so the next
+    // segment cursor is not displaced by the overlap.
     const fwd = new THREE.Vector3(Math.sin(heading), 0, Math.cos(heading));
     const endPos = new THREE.Vector3(
       startPos.x + fwd.x * length,

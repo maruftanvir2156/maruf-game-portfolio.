@@ -325,7 +325,7 @@ Animation Loop: OK`);
 
       // 4. Update Obstacles & Environment
       this.obstacleManager.update(dt, elapsed);
-      this.environment.update(dt, this.camera.position);
+      this.environment.update(dt, this.camera.position, this.physics.position);
       this.particleSystem.update(dt);
 
       // 5. Collectible Pickups Check

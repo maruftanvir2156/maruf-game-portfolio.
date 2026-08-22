@@ -123,14 +123,19 @@ export class CameraController {
 
     // ── 2. Desired camera position ────────────────────────────────────────────
     //
-    // Place camera FOLLOW_DIST behind the ball in its actual movement direction
-    // and HEIGHT_OFFSET above its centre.  This works correctly on straight
-    // sections, curves (camera rotates with the turn), ramps (camera climbs with
-    // ball Y), and loops (camera stays outside the loop looking at ball).
+    // Y-freeze while falling: if the ball is airborne AND moving downward at
+    // speed > 2 m/s, hold the camera's desired Y at its current smoothed
+    // value so the camera stays at track level while the respawn fires.
+    // Once grounded again (or after reset() snaps it), tracking resumes normally.
     //
+    const isFalling = !isGrounded && ballVel.y < -2.0;
+    const desiredY  = isFalling
+      ? this._smoothedPos.y                      // freeze — don't follow ball down
+      : ballPos.y + HEIGHT_OFFSET;               // normal tracking
+
     this._desiredPos.set(
       ballPos.x + this._behindDir.x * FOLLOW_DIST,
-      ballPos.y + HEIGHT_OFFSET,
+      desiredY,
       ballPos.z + this._behindDir.z * FOLLOW_DIST
     );
 

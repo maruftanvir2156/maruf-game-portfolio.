@@ -154,8 +154,11 @@ export const SEGMENT_SKINS = {
     name: 'Wood Plank Caution',
     getMaterial: () => new THREE.MeshStandardMaterial({
       map: makeWoodCautionTexture(),
-      roughness: 0.45,
-      metalness: 0.15
+      roughness: 0.40,
+      metalness: 0.15,
+      side: THREE.DoubleSide,
+      emissive: new THREE.Color(0x112233),
+      emissiveIntensity: 0.3
     })
   },
   BRICK_CHEVRON: {
@@ -165,7 +168,8 @@ export const SEGMENT_SKINS = {
       map: makeBrickChevronTexture(),
       roughness: 0.25,
       metalness: 0.50,
-      emissive: 0x004466,
+      side: THREE.DoubleSide,
+      emissive: new THREE.Color(0x004466),
       emissiveIntensity: 0.30
     })
   },
@@ -174,8 +178,11 @@ export const SEGMENT_SKINS = {
     name: 'Voxel Grass Dirt',
     getMaterial: () => new THREE.MeshStandardMaterial({
       map: makeVoxelGrassTexture(),
-      roughness: 0.70,
-      metalness: 0.05
+      roughness: 0.40,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
+      emissive: new THREE.Color(0x112233),
+      emissiveIntensity: 0.3
     })
   }
 };

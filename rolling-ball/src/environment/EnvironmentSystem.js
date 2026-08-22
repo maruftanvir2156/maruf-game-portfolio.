@@ -142,17 +142,25 @@ export class EnvironmentSystem {
     this.envGroup.add(this.cloudDeck);
     this.envGroup.add(this.propsGroup);
 
-    // Directional Sunlight & Accent Lights
+    // ── Global fill lights — prevent black geometry on any world theme ─────
+    // HemisphereLight provides sky/ground fill that shadows never fully extinguish.
+    this.hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 1.2);
+    this.hemiLight.position.set(0, 50, 0);
+    this.scene.add(this.hemiLight);
+
+    // Ambient — raised from 0.5 → 0.8, neutral white base
+    this.ambLight = new THREE.AmbientLight(0xffffff, 0.8);
+    this.scene.add(this.ambLight);
+
+    // Directional Sunlight — follows ball Z so coverage never decays along track
     this.dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
-    this.dirLight.position.set(100, 200, 50);
+    this.dirLight.position.set(10, 25, 15);   // relative to ball; updated in update()
     this.dirLight.castShadow = true;
     this.dirLight.shadow.mapSize.width  = 2048;
     this.dirLight.shadow.mapSize.height = 2048;
     this.dirLight.shadow.bias = -0.0001;
     this.scene.add(this.dirLight);
-
-    this.ambLight = new THREE.AmbientLight(0xb0e0e6, 0.5);
-    this.scene.add(this.ambLight);
+    this.scene.add(this.dirLight.target); // target must be in scene for lookAt to work
 
     // Accent Lights
     this.cyanPointLight = new THREE.PointLight(0x00f0ff, 2.5, 500);
@@ -193,9 +201,14 @@ export class EnvironmentSystem {
 
     this.dirLight.color.set(zone.sunColor);
     this.dirLight.intensity = zone.sunIntensity;
-    this.dirLight.position.set(...zone.sunPos);
+    // Note: dirLight.position is updated every frame in update() to follow the ball.
+    // Store the offset so we apply it relative to ball position.
+    this._dirLightOffset = new THREE.Vector3(...(zone.sunPos || [10, 25, 15]));
     this.ambLight.color.set(zone.ambColor);
-    this.ambLight.intensity = zone.ambIntensity;
+    // Enforce minimum ambient so walls never go pitch-black in dark worlds
+    this.ambLight.intensity = Math.max(zone.ambIntensity, 0.6);
+    // Scale hemi light per world — darker worlds still need fill
+    this.hemiLight.intensity = zone.id.includes('CYBERPUNK') || zone.id.includes('VOLCANIC') || zone.id.includes('COSMIC') ? 0.7 : 1.2;
 
     if (zone.id === 'WORLD_7_COSMIC_VOID') {
       this.cyanPointLight.visible = true;
@@ -510,10 +523,23 @@ export class EnvironmentSystem {
     if (trackBuilder) trackBuilder.setWorldTheme(target);
   }
 
-  update(dt, cameraPos) {
+  update(dt, cameraPos, ballPos) {
     this.envGroup.position.z = cameraPos.z;
     if (this.skyMesh) {
       this.skyMesh.position.copy(cameraPos);
+    }
+
+    // ── Move directional light with the ball so it never decays over long track ──
+    // ballPos is preferred; fall back to cameraPos when not provided.
+    const trackPos = ballPos || cameraPos;
+    if (this._dirLightOffset) {
+      this.dirLight.position.set(
+        trackPos.x + this._dirLightOffset.x,
+        trackPos.y + this._dirLightOffset.y,
+        trackPos.z + this._dirLightOffset.z
+      );
+      this.dirLight.target.position.copy(trackPos);
+      this.dirLight.target.updateMatrixWorld();
     }
 
     const time = performance.now() * 0.002;
