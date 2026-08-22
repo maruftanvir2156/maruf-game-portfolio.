@@ -304,6 +304,7 @@ Animation Loop: OK`);
       // Uses this.physics.position (authoritative state) not the visual mesh.
       if (!physicsRes.hasRespawned && this.physics.position.y < -2.0) {
         this.physics.respawn();
+        this.input.reset(); // wipe stuck keys / touch drag so grace period is clean
         physicsRes.hasRespawned = true;
       }
 
@@ -311,6 +312,7 @@ Animation Loop: OK`);
       this.cameraController.setTrackCenterX(0);
 
       if (physicsRes.hasRespawned) {
+        this.input.reset(); // also wipe for kill-plane respawns (idempotent)
         this.cameraController.reset(this.physics.position);
       } else {
         this.cameraController.update(dt, this.physics.position, this.physics.velocity, physicsRes.isGrounded);

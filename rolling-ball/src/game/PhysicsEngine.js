@@ -26,6 +26,9 @@ export class PhysicsEngine {
     this.groundNormal          = new THREE.Vector3(0, 1, 0);
     this.boostTimer            = 0;
     this.hasRespawnedThisFrame = false;
+    // Grace period after respawn: blocks drive/steer acceleration for 0.3s
+    // so stale input and leftover substeps don't ghost-launch the ball.
+    this.respawnGraceTimer     = 0;
 
     // ── Multi-Ray Ground Probe ───────────────────────────────────────────────
     this.downRay = new THREE.Raycaster();
@@ -115,8 +118,14 @@ export class PhysicsEngine {
     this.isGrounded = true;
     this.groundNormal.set(0, 1, 0);
     this.hasRespawnedThisFrame = true;
+    // Zero accumulator so NO stale substeps fire immediately after respawn.
+    // Without this, 1–3 substeps queued from the previous frame would run
+    // with the old velocity/input and re-apply forward momentum.
     this.accumulator = 0;
     this.boostTimer  = 0;
+    // 0.3s grace: forward/steer acceleration is suppressed until the player
+    // deliberately provides new input or the timer expires.
+    this.respawnGraceTimer = 0.30;
   }
 
   applyBoost(speedBoost = 38) {
@@ -191,6 +200,41 @@ export class PhysicsEngine {
     const steerPwr = 22;
 
     if (this.boostTimer > 0) this.boostTimer -= dt;
+
+    // ── Respawn grace period ──────────────────────────────────────────
+    // For 0.3s after respawn: suppress all drive and steer acceleration so the
+    // ball starts stationary. Break grace early if the player deliberately
+    // inputs steer (|steer| > 0.1) or extra forward (forwardAccel > 1.05).
+    if (this.respawnGraceTimer > 0) {
+      this.respawnGraceTimer -= dt;
+      const deliberateInput = Math.abs(inputSteer) > 0.1 || forwardAccel > 1.05;
+      if (!deliberateInput) {
+        // During grace: apply only gravity + ramp adherence, no drive force.
+        // The isGrounded block below is still entered for slope adherence,
+        // but we return early before drive/steer/jump apply.
+        if (this.isGrounded) {
+          // Ramp adherence still runs so ball doesn't slide back on a slope
+          const slopeFactor = 1.0 - this.groundNormal.y;
+          if (slopeFactor > 0.02) {
+            this.velocity.addScaledVector(this.groundNormal, -Math.abs(this.gravity) * 1.5 * slopeFactor * dt);
+          }
+          // Lateral damping clears any residual X velocity immediately
+          this.velocity.x *= Math.exp(-18 * dt);
+          // Enforce zero Z velocity during grace (no creep)
+          this.velocity.z = 0;
+        } else {
+          // Airborne during grace: gravity only
+          this.velocity.y += this.gravity * dt;
+        }
+        this.position.addScaledVector(this.velocity, dt);
+        this._resolveSides();
+        this._updateRotation(dt);
+        return; // skip normal drive/steer logic
+      } else {
+        // Player is actively controlling — cancel grace immediately
+        this.respawnGraceTimer = 0;
+      }
+    }
 
     if (this.isGrounded) {
       // Slope roll-down gravity projection
