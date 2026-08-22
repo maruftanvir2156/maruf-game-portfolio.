@@ -245,7 +245,7 @@ Animation Loop: OK`);
         this.portals.push({ mesh, pos: portalCenter, targetZone: seg.targetZone });
 
       } else if (seg.type === 'FINISH_GATE') {
-        this.finishGate = new FinishGate(this.scene, cursor.pos);
+        this.finishGate = new FinishGate(this.scene, cursor.pos, cursor.heading);
       }
     }
 

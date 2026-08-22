@@ -285,12 +285,19 @@ export class PhysicsEngine {
         this.velocity.z *= 0.995;
       }
 
-      // Speed cap
+      // 2D XZ speed cap (existing)
       const spd2D = Math.sqrt(this.velocity.x ** 2 + this.velocity.z ** 2);
       if (spd2D > maxSpeed) {
         const f = maxSpeed / spd2D;
         this.velocity.x *= f;
         this.velocity.z *= f;
+      }
+
+      // Total 3D vector speed cap — catches diagonal + slope combinations
+      // that the 2D cap misses. Hard limit at 26 m/s total magnitude.
+      const totalSpeed = this.velocity.length();
+      if (totalSpeed > 26.0) {
+        this.velocity.multiplyScalar(26.0 / totalSpeed);
       }
 
       // Jump action — Pure Y impulse, ZERO forced lateral drift
