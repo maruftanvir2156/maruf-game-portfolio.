@@ -161,6 +161,16 @@ export class CameraController {
     this._smoothedPos.lerp(this._desiredPos, posAlpha);
     this._smoothedLook.lerp(this._lookTarget, rotAlpha);
 
+    // ── Hard camera Y-floor clamp ─────────────────────────────────────────
+    // Mathematically prevents camera from ever diving below track level,
+    // even during extreme ramp launches or physics glitches.
+    // Floor = max(ballY + 4.2, 4.2) — identical to user's requested clamp
+    // but applied AFTER lerp so all damping math is still respected.
+    const yFloor = Math.max(ballPos.y + 4.2, 4.2);
+    if (this._smoothedPos.y < yFloor) {
+      this._smoothedPos.y = yFloor;
+    }
+
     // ── 7. Apply to camera ────────────────────────────────────────────────
     this.camera.position.copy(this._smoothedPos);
     this.camera.up.copy(this._up);

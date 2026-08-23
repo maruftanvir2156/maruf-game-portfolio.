@@ -299,10 +299,11 @@ Animation Loop: OK`);
 
       // ── Secondary fall boundary guard ─────────────────────────────────────
       // The physics engine's own kill plane fires at y < -12. This earlier
-      // check at y < -2 catches the ball before it falls far off-screen,
-      // giving an instant, visually clean respawn from the last checkpoint.
-      // Uses this.physics.position (authoritative state) not the visual mesh.
-      if (!physicsRes.hasRespawned && this.physics.position.y < -2.0) {
+      // check at y < -1.5 catches the ball the moment it slips below the
+      // track plane, giving an instant, visually clean respawn.
+      // Uses this.physics.position (authoritative state) NOT the visual mesh
+      // (setting the mesh directly would be overwritten next physics frame).
+      if (!physicsRes.hasRespawned && this.physics.position.y < -1.5) {
         this.physics.respawn();
         this.input.reset(); // wipe stuck keys / touch drag so grace period is clean
         physicsRes.hasRespawned = true;
