@@ -17,6 +17,7 @@ I prioritise code architecture that is modular, readable, and extensible — tre
 | Project | Genre | Platform | Tech Stack |
 |---|---|---|---|
 | [Sphere Velocity](./rolling-ball/) | 3D Rolling Platformer | Web + Android | Three.js · Vite · Capacitor |
+| [Skyway Stunt Driver 3D](#-skyway-stunt-driver-3d) | Arcade Stunt Racing | Mobile / Android | Unity · C# · Android |
 
 ---
 
@@ -37,6 +38,21 @@ The player rolls a physics-simulated ball along floating sky tracks, navigating 
 - **Forensic debug telemetry panel** (F3) exposing live FPS, physics timings, velocity, ground state, and surface normals
 
 ➜ [View Project →](./rolling-ball/)
+
+---
+
+## 🏎️ Skyway Stunt Driver 3D
+
+**A high-octane 3D arcade stunt racing game featuring floating sky tracks and custom vehicle physics.**
+
+* **Engine / Stack:** Unity / C# / Android (Capacitor & Native)
+* **Highlights:**
+  * Arcade vehicle physics model with custom downforce, grip curve, and mid-air stabilization.
+  * Multi-tiered stunt tracks with dynamic camera angles for loopings and massive ramp launches.
+  * Optimized mobile rendering pipeline with low-draw-call geometry and dynamic obstacle colliders.
+
+➜ [Download on Google Play →](https://play.google.com/store/apps/details?id=com.maruftanvir.skystuntracing)
+
 
 ---
 
@@ -88,7 +104,8 @@ npx cap open android
 
 ```
 maruf-game-portfolio/
-└── rolling-ball/          # Sphere Velocity — 3D Rolling Platformer
+├── rolling-ball/          # Sphere Velocity — 3D Rolling Platformer
+└── skyway-stunt/          # Skyway Stunt Driver 3D — Arcade Stunt Racer (WebGL build)
     ├── src/
     │   ├── game/          # Core engine (Physics, Input, Camera, GameApp, PlayerBall)
     │   ├── track/         # Procedural track geometry builder
