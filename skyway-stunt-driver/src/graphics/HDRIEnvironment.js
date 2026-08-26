@@ -1,11 +1,21 @@
 import * as THREE from 'three';
 import { DeviceTier } from './DeviceTier.js';
 
+const BASE = import.meta.env.BASE_URL || './';
+
+export function resolveAssetPath(rawPath) {
+  if (!rawPath) return rawPath;
+  if (rawPath.startsWith('http://') || rawPath.startsWith('https://') || rawPath.startsWith('data:')) return rawPath;
+  const clean = rawPath.startsWith('/') ? rawPath.slice(1) : rawPath;
+  const prefix = BASE.endsWith('/') ? BASE : `${BASE}/`;
+  return `${prefix}${clean}`;
+}
+
 export const ENVIRONMENTS = {
   golden_bay: {
     id: 'golden_bay',
     name: 'Golden Bay Coast',
-    file: '/assets/golden_bay.jpg',
+    file: 'assets/golden_bay.jpg',
     sunColor: 0xffd1a4,
     sunIntensity: 2.2,
     ambientColor: 0xffe4ca,
@@ -15,7 +25,7 @@ export const ENVIRONMENTS = {
   rooftop: {
     id: 'rooftop',
     name: 'Metropolis Rooftop',
-    file: '/assets/homecoming_center_rooftop.jpg',
+    file: 'assets/homecoming_center_rooftop.jpg',
     sunColor: 0xffffff,
     sunIntensity: 2.5,
     ambientColor: 0xdbeafe,
@@ -25,7 +35,7 @@ export const ENVIRONMENTS = {
   lakeside_sunrise: {
     id: 'lakeside_sunrise',
     name: 'Lakeside Sunrise',
-    file: '/assets/lakeside_sunrise.jpg',
+    file: 'assets/lakeside_sunrise.jpg',
     sunColor: 0xffb700,
     sunIntensity: 2.0,
     ambientColor: 0xfed7aa,
@@ -35,7 +45,7 @@ export const ENVIRONMENTS = {
   clear_night: {
     id: 'clear_night',
     name: 'Midnight Starlight',
-    file: '/assets/rogland_clear_night.jpg',
+    file: 'assets/rogland_clear_night.jpg',
     sunColor: 0x38bdf8,
     sunIntensity: 0.8,
     ambientColor: 0x0f172a,
@@ -45,7 +55,7 @@ export const ENVIRONMENTS = {
   alpine_hill: {
     id: 'alpine_hill',
     name: 'Alpine Ridge',
-    file: '/assets/spaichingen_hill.jpg',
+    file: 'assets/spaichingen_hill.jpg',
     sunColor: 0xfffaed,
     sunIntensity: 2.4,
     ambientColor: 0xe0f2fe,
@@ -55,7 +65,7 @@ export const ENVIRONMENTS = {
   skyline_sunset: {
     id: 'skyline_sunset',
     name: 'Skyline Sunset',
-    file: '/assets/sunset_jhbcentral.jpg',
+    file: 'assets/sunset_jhbcentral.jpg',
     sunColor: 0xf97316,
     sunIntensity: 2.1,
     ambientColor: 0xfde047,
@@ -65,7 +75,7 @@ export const ENVIRONMENTS = {
   venice_twilight: {
     id: 'venice_twilight',
     name: 'Venice Twilight',
-    file: '/assets/venice_sunset.jpg',
+    file: 'assets/venice_sunset.jpg',
     sunColor: 0xf43f5e,
     sunIntensity: 1.9,
     ambientColor: 0xfae8ff,
@@ -201,10 +211,11 @@ export class HDRIEnvironment {
     }
 
     const textureLoader = new THREE.TextureLoader();
-    console.log(`[HDRIEnvironment] Loading Environment [${config.name}]:`, config.file);
+    const envPath = resolveAssetPath(config.file);
+    console.log(`[HDRIEnvironment] Loading Environment [${config.name}]:`, envPath);
 
     textureLoader.load(
-      config.file,
+      envPath,
       (texture) => {
         texture.mapping = THREE.EquirectangularReflectionMapping;
         texture.colorSpace = THREE.SRGBColorSpace;

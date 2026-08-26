@@ -205,8 +205,87 @@ export class Vehicle3DModels {
     return this.createVehicleMesh(vehicleKey);
   }
 
-  static _createFallbackCar(vehicleKey) {
-    // Return empty group — real GLB assets must always be loaded and rendered
-    return new THREE.Group();
+  static _createFallbackCar(vehicleKey = 'default') {
+    const group = new THREE.Group();
+    group.name = `fallback_car_${vehicleKey}`;
+
+    const manifest = CAR_MANIFEST[vehicleKey];
+    const primaryColor = manifest?.primaryColor || '#38bdf8';
+
+    // 1. Lower Chassis
+    const chassisGeo = new THREE.BoxGeometry(1.8, 0.5, 3.8);
+    const chassisMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(primaryColor),
+      roughness: 0.3,
+      metalness: 0.7
+    });
+    const chassis = new THREE.Mesh(chassisGeo, chassisMat);
+    chassis.position.y = 0.55;
+    chassis.castShadow = true;
+    chassis.receiveShadow = false;
+    group.add(chassis);
+
+    // 2. Cabin / Roof (Dark glass styling)
+    const cabinGeo = new THREE.BoxGeometry(1.4, 0.45, 1.8);
+    const cabinMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.1,
+      metalness: 0.9
+    });
+    const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+    cabin.position.set(0, 0.95, -0.2);
+    cabin.castShadow = true;
+    cabin.receiveShadow = false;
+    group.add(cabin);
+
+    // 3. Four Cylinder Wheels (Tires)
+    const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.3, 16);
+    const wheelMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.9,
+      metalness: 0.1
+    });
+
+    const wheelPositions = [
+      [-0.95, 0.38, 1.2],   // Front Left
+      [0.95, 0.38, 1.2],    // Front Right
+      [-0.95, 0.38, -1.2],  // Rear Left
+      [0.95, 0.38, -1.2]    // Rear Right
+    ];
+
+    wheelPositions.forEach(([x, y, z]) => {
+      const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(x, y, z);
+      wheel.castShadow = true;
+      wheel.receiveShadow = false;
+      group.add(wheel);
+    });
+
+    // 4. Headlights (Yellow/White glow)
+    const lightGeo = new THREE.BoxGeometry(0.3, 0.15, 0.05);
+    const lightMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    const hlLeft = new THREE.Mesh(lightGeo, lightMat);
+    hlLeft.position.set(-0.6, 0.55, 1.91);
+    const hlRight = new THREE.Mesh(lightGeo, lightMat);
+    hlRight.position.set(0.6, 0.55, 1.91);
+    group.add(hlLeft);
+    group.add(hlRight);
+
+    // 5. Taillights (Red glow)
+    const tailMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const tlLeft = new THREE.Mesh(lightGeo, tailMat);
+    tlLeft.position.set(-0.6, 0.55, -1.91);
+    const tlRight = new THREE.Mesh(lightGeo, tailMat);
+    tlRight.position.set(0.6, 0.55, -1.91);
+    group.add(tlLeft);
+    group.add(tlRight);
+
+    group.visible = true;
+    console.log(`[Vehicle3DModels] Spawned procedural fallback car for '${vehicleKey}' ✓`);
+    return group;
   }
 }
+
+export const createFallbackCar = Vehicle3DModels._createFallbackCar.bind(Vehicle3DModels);
+

@@ -29,7 +29,7 @@ export const CARS = [
     price: 0,
     owned: true,
     unlocked: true, // STARTER CAR ONLY
-    modelPath: '/assets/2009_c-west_gt_nissan_silvia_s15_200sx.glb'
+    modelPath: 'assets/2009_c-west_gt_nissan_silvia_s15_200sx.glb'
   },
   {
     id: 'mercedes_s65',
@@ -37,7 +37,7 @@ export const CARS = [
     price: 25000,
     owned: false,
     unlocked: false,
-    modelPath: '/assets/2015_mercedes-benz_s65_amg_coupe.glb'
+    modelPath: 'assets/2015_mercedes-benz_s65_amg_coupe.glb'
   },
   {
     id: 'bentley_gt3',
@@ -45,7 +45,7 @@ export const CARS = [
     price: 35000,
     owned: false,
     unlocked: false,
-    modelPath: '/assets/bentley_continental_gt3.glb'
+    modelPath: 'assets/bentley_continental_gt3.glb'
   },
   {
     id: 'xiaomi_su7',
@@ -53,7 +53,7 @@ export const CARS = [
     price: 50000,
     owned: false,
     unlocked: false,
-    modelPath: '/assets/2025_xiaomi_su7_ultra.glb'
+    modelPath: 'assets/2025_xiaomi_su7_ultra.glb'
   },
   {
     id: 'lambo_centenario',
@@ -61,7 +61,7 @@ export const CARS = [
     price: 75000,
     owned: false,
     unlocked: false,
-    modelPath: '/assets/2017_lamborghini_centenario_roadster.glb'
+    modelPath: 'assets/2017_lamborghini_centenario_roadster.glb'
   },
   {
     id: 'pagani_huayra',
@@ -69,7 +69,7 @@ export const CARS = [
     price: 100000,
     owned: false,
     unlocked: false,
-    modelPath: '/assets/2025_pagani_huayra_r_20th_asphalt_anniversary.glb'
+    modelPath: 'assets/2025_pagani_huayra_r_20th_asphalt_anniversary.glb'
   }
 ];
 
@@ -80,7 +80,7 @@ export const VEHICLE_CATALOG = {
     manufacturer: 'Takumi Dynamics',
     className: 'STREET',
     tier: 'TIER C',
-    path: '/assets/2009_c-west_gt_nissan_silvia_s15_200sx.glb',
+    path: 'assets/2009_c-west_gt_nissan_silvia_s15_200sx.glb',
     description: 'Ultra-agile track-tuned sports coupe designed for razor-sharp handling and narrow suspended rails.',
     statSpeed: 55, statHandling: 70, statStability: 50,
     topSpeed: 24, nitroSpeed: 36, acceleration: 14, braking: 45, handling: 0.13,
@@ -94,7 +94,7 @@ export const VEHICLE_CATALOG = {
     manufacturer: 'Aethelgard Luxury',
     className: 'SUPER',
     tier: 'TIER C',
-    path: '/assets/2015_mercedes-benz_s65_amg_coupe.glb',
+    path: 'assets/2015_mercedes-benz_s65_amg_coupe.glb',
     description: 'Heavy high-luxury grand tourer with excellent acceleration and hydraulic active body suspension.',
     statSpeed: 76, statHandling: 68, statStability: 72,
     topSpeed: 28, nitroSpeed: 43, acceleration: 18, braking: 50, handling: 0.14,
@@ -108,7 +108,7 @@ export const VEHICLE_CATALOG = {
     manufacturer: 'Apex Engineering',
     className: 'SUPER',
     tier: 'TIER B',
-    path: '/assets/bentley_continental_gt3.glb',
+    path: 'assets/bentley_continental_gt3.glb',
     description: 'Heavy track-focused luxury grand tourer with excellent stability and massive downforce.',
     statSpeed: 68, statHandling: 75, statStability: 65,
     topSpeed: 26, nitroSpeed: 40, acceleration: 16, braking: 48, handling: 0.15,
@@ -122,7 +122,7 @@ export const VEHICLE_CATALOG = {
     manufacturer: 'Celestia Tech',
     className: 'HYPER',
     tier: 'TIER A',
-    path: '/assets/2025_xiaomi_su7_ultra.glb',
+    path: 'assets/2025_xiaomi_su7_ultra.glb',
     description: 'All-electric hyper sedan prototype with triple electric motors and torque vectoring.',
     statSpeed: 85, statHandling: 82, statStability: 80,
     topSpeed: 30, nitroSpeed: 46, acceleration: 20, braking: 53, handling: 0.17,
@@ -136,7 +136,7 @@ export const VEHICLE_CATALOG = {
     manufacturer: 'Velocita Supercars',
     className: 'HYPER',
     tier: 'TIER HYPER',
-    path: '/assets/2017_lamborghini_centenario_roadster.glb',
+    path: 'assets/2017_lamborghini_centenario_roadster.glb',
     description: 'Carbon fiber hypercar prototype featuring active rear steering and maximum aerodynamic downforce.',
     statSpeed: 92, statHandling: 88, statStability: 90,
     topSpeed: 32, nitroSpeed: 49, acceleration: 22, braking: 56, handling: 0.18,
@@ -150,7 +150,7 @@ export const VEHICLE_CATALOG = {
     manufacturer: 'Horacio Masterpieces',
     className: 'HYPER',
     tier: 'TIER S+',
-    path: '/assets/2025_pagani_huayra_r_20th_asphalt_anniversary.glb',
+    path: 'assets/2025_pagani_huayra_r_20th_asphalt_anniversary.glb',
     description: 'Track-only hypercar powered by a naturally aspirated V12 engine and active aerodynamics.',
     statSpeed: 98, statHandling: 95, statStability: 98,
     topSpeed: 34, nitroSpeed: 52, acceleration: 24, braking: 59, handling: 0.20,
