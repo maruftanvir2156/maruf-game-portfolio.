@@ -36,11 +36,19 @@ jobs:
           npm run build
           cd ..
 
+      - name: Build Skyway Stunt Driver
+        run: |
+          cd skyway-stunt-driver
+          npm ci || npm install
+          npm run build
+          cd ..
+
       - name: Assemble Portfolio Site
         run: |
           mkdir -p public_site
           cp index.html public_site/index.html
           cp -r rolling-ball/dist public_site/rolling-ball
+          cp -r skyway-stunt-driver/dist public_site/skyway-stunt
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

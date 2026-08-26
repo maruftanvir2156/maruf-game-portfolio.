@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, orientation=landscape">
+  <meta name="screen-orientation" content="landscape">
+  <title>Sky Track Racing: Stunt Car 3D</title>
+  <!-- Google Fonts (Supercell & Arcade Styling) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bungee&family=Lilita+One&family=Luckiest+Guy&family=Outfit:wght@400;600;700;900&family=Space+Grotesk:wght@500;700;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles.css">
+
+  <!-- ═══ DIAGNOSTIC: On-Screen Error Console ═══
+       Catches ALL uncaught JS errors & unhandled promise rejections.
+       Displays them as a red overlay directly on the device screen.
+       Remove before production release. -->
+  <script>
+    (function () {
+      function showOnScreenError(msg, url, line) {
+        var errDiv = document.getElementById('on-screen-debug-error');
+        if (!errDiv) {
+          errDiv = document.createElement('div');
+          errDiv.id = 'on-screen-debug-error';
+          errDiv.style.cssText = [
+            'position:fixed', 'top:0', 'left:0', 'width:100%',
+            'max-height:50vh', 'background:rgba(180,0,0,0.95)',
+            'color:#fff', 'font-family:monospace', 'font-size:11px',
+            'padding:8px', 'z-index:999999', 'overflow:auto',
+            'word-break:break-all', 'pointer-events:auto',
+            'box-sizing:border-box'
+          ].join(';');
+          // Tap to dismiss
+          errDiv.addEventListener('click', function () { errDiv.innerHTML = ''; errDiv.style.display = 'none'; });
+          document.body.appendChild(errDiv);
+        }
+        errDiv.style.display = 'block';
+        var stamp = new Date().toISOString().slice(11, 23);
+        var src = url ? (url.split('/').pop() + (line ? ':' + line : '')) : '';
+        errDiv.innerHTML +=
+          '<div style="margin-bottom:4px">' +
+          '<strong>[' + stamp + ' CRASH]</strong> ' + String(msg).slice(0, 300) +
+          (src ? '<br><small style="opacity:.8">' + src + '</small>' : '') +
+          '</div><hr style="border-color:rgba(255,255,255,.3);margin:2px 0">';
+        // Auto-scroll to newest error
+        errDiv.scrollTop = errDiv.scrollHeight;
+      }
+
+      window.addEventListener('error', function (e) {
+        showOnScreenError(e.message, e.filename, e.lineno);
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        var msg = e.reason
+          ? (e.reason.message || String(e.reason))
+          : 'Unhandled Promise Rejection';
+        showOnScreenError(msg, '', '');
+      });
+
+      // Expose globally so main.js can also push diagnostic messages
+      window._debugOverlay = showOnScreenError;
+    })();
+  </script>
+</head>
+
+<body>
+  <!-- 3D Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Speed Lines FX Overlay for Nitro & Fast Acceleration -->
+  <div id="speed-lines-overlay" class="speed-lines"></div>
+
+  <!-- Dynamic Arcade Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- UI Overlay System -->
+  <div id="ui-layer">
+
+    <!-- TOP GLOBAL CURRENCY & NAVIGATION BAR -->
+    <div class="top-global-bar">
+      <div class="brand-badge">
+        <span class="game-logo-text">SKY TRACK 3D</span>
+      </div>
+      <div class="top-bar-right">
+        <div class="global-currency-card">
+          <svg class="gold-coin-svg" viewBox="0 0 24 24" width="22" height="22" fill="none">
+            <circle cx="12" cy="12" r="10" fill="url(#goldGrad)" stroke="#FEF08A" stroke-width="1.5"/>
+            <circle cx="12" cy="12" r="7.5" stroke="#D97706" stroke-width="1" stroke-dasharray="2 1"/>
+            <polygon points="12,6.5 13.5,10 17,10 14,12 15.5,15.5 12,13.5 8.5,15.5 10,12 7,10 10.5,10" fill="#78350F"/>
+          </svg>
+          <span id="global-coin-counter">0</span>
+        </div>
+        <button id="btn-open-shop-global" class="btn-shop-trigger">STORE</button>
+      </div>
+    </div>
+
+    <!-- 0. LOADING SCREEN -->
+    <div id="loading-screen" class="ui-screen active">
+      <div class="loading-content">
+        <div class="supercell-hero">
+          <h1 class="game-title">SKY TRACK RACING</h1>
+          <p class="subtitle">STUNT CAR 3D</p>
+        </div>
+        <div class="loading-bar-container">
+          <div id="loading-bar-fill" class="loading-bar-fill"></div>
+        </div>
+        <p id="loading-text" class="loading-status">Loading Asset Pipeline...</p>
+        <span id="loading-percent-text" class="loading-percent">0%</span>
+      </div>
+    </div>
+
+    <!-- PORTRAIT ORIENTATION WARNING (Permanently Hidden) -->
+    <div id="portrait-orientation-warning" class="portrait-warning-screen" style="display: none !important;">
+      <div class="warning-card">
+        <div class="phone-icon-anim">PHONE</div>
+        <h2>ROTATE YOUR DEVICE</h2>
+        <p>Sky Track Racing is engineered exclusively for Landscape Mode.</p>
+      </div>
+    </div>
+
+    <!-- 1. MAIN MENU VIEW -->
+    <div id="screen-main-menu" class="ui-screen">
+      <div class="main-menu-container">
+        <div class="supercell-hero">
+          <h1 class="game-title">SKY TRACK RACING</h1>
+          <p class="subtitle">STUNT CAR 3D</p>
+        </div>
+
+        <div class="main-menu-actions">
+          <button id="btn-garage" class="btn-hero-race">
+            <span class="play-icon">GARAGE & CARS</span>
+          </button>
+          <button id="btn-environments" class="btn-hero-race">
+            <span class="play-icon">ENVIRONMENTS</span>
+          </button>
+          <button id="btn-levels" class="btn-hero-race">
+            <span class="play-icon">LEVEL SELECT</span>
+          </button>
+          <button id="btn-quick-race" class="btn-hero-race btn-secondary-race">
+            <span class="play-icon">QUICK RACE</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. GARAGE & CAR SELECT VIEW -->
+    <div id="screen-garage" class="ui-screen">
+      <!-- TOP-LEFT VEHICLE INFO & STATS PANEL -->
+      <div class="garage-vehicle-info-panel">
+        <div class="car-title-block">
+          <h1 id="vehicle-name" class="hero-car-title">Vanguard V8 GT</h1>
+          <div class="hero-car-tags">
+            <span id="vehicle-type-tag" class="hero-tag">MUSCLE</span>
+            <span id="vehicle-tier-badge" class="hero-tag tier-tag">TIER C</span>
+          </div>
+        </div>
+
+        <!-- STAT BARS CONTAINER -->
+        <div class="floating-stats-panel">
+          <div class="stat-row">
+            <span class="stat-label">SPEED</span>
+            <div class="stat-bar-track">
+              <div id="stat-speed" class="stat-fill stat-speed-fill" style="width: 85%;"></div>
+            </div>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">HANDLING</span>
+            <div class="stat-bar-track">
+              <div id="stat-handling" class="stat-fill stat-handling-fill" style="width: 70%;"></div>
+            </div>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">BOOST</span>
+            <div class="stat-bar-track">
+              <div id="stat-stability" class="stat-fill stat-boost-fill" style="width: 80%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CAR CYCLING OVERLAY ARROWS -->
+      <button id="btn-prev-vehicle" class="car-arrow-btn arrow-left" title="Previous Car">&lt;</button>
+      <button id="btn-next-vehicle" class="car-arrow-btn arrow-right" title="Next Car">&gt;</button>
+
+      <!-- GARAGE BOTTOM CONTROLS -->
+      <div class="garage-bottom-bar-v2">
+        <div class="customization-icon-row">
+          <button class="custom-icon-btn active" id="btn-custom-paint" title="Paint Options">
+            <span class="btn-text">PAINT (AD)</span>
+          </button>
+          <button class="custom-icon-btn" id="btn-custom-wheels" title="Wheels Options">
+            <span class="btn-text">WHEELS (AD)</span>
+          </button>
+          <button class="custom-icon-btn" id="btn-custom-upgrades" title="Stats Upgrade">
+            <span class="btn-text">UPGRADE (AD)</span>
+          </button>
+        </div>
+
+        <div class="compact-paint-bar" id="compact-paint-bar">
+          <button class="paint-swatch active" style="background: #f59e0b;" data-color="#f59e0b"
+            title="Apex Gold"></button>
+          <button class="paint-swatch" style="background: #06b6d4;" data-color="#06b6d4" title="Cyber Cyan"></button>
+          <button class="paint-swatch" style="background: #ef4444;" data-color="#ef4444" title="Crimson Fury"></button>
+          <button class="paint-swatch" style="background: #8b5cf6;" data-color="#8b5cf6"
+            title="Midnight Violet"></button>
+          <button class="paint-swatch" style="background: #10b981;" data-color="#10b981" title="Emerald Tech"></button>
+          <button class="paint-swatch" style="background: #1e293b;" data-color="#1e293b"
+            title="Obsidian Black"></button>
+        </div>
+
+        <div class="nav-actions-row">
+          <button id="btn-back-to-main" class="btn-nav-secondary">MAIN MENU</button>
+          <button id="btn-goto-env" class="btn-hero-race">SELECT ENVIRONMENT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. ENVIRONMENT SELECT VIEW -->
+    <div id="screen-env-select" id="view-environments" class="ui-screen">
+      <div class="menu-header-bar">
+        <h2>CHOOSE ENVIRONMENT</h2>
+        <p>7 Unique 8K Skyway Realms</p>
+      </div>
+
+      <div class="env-cards-container">
+        <button class="btn-env active" data-env="golden_bay">Golden Bay Coast</button>
+        <button class="btn-env" data-env="rooftop">Metropolis Rooftop</button>
+        <button class="btn-env" data-env="lakeside_sunrise">Lakeside Sunrise</button>
+        <button class="btn-env" data-env="clear_night">Midnight Starlight</button>
+        <button class="btn-env" data-env="alpine_hill">Alpine Ridge</button>
+        <button class="btn-env" data-env="skyline_sunset">Skyline Sunset</button>
+        <button class="btn-env" data-env="venice_twilight">Venice Twilight</button>
+      </div>
+
+      <div class="nav-actions-row">
+        <button id="btn-back-to-garage" class="btn-nav-secondary">GARAGE</button>
+        <button id="btn-goto-level" class="btn-hero-race">SELECT LEVEL</button>
+      </div>
+    </div>
+
+    <!-- 4. LEVEL SELECT VIEW -->
+    <div id="screen-level-select" class="ui-screen">
+      <div class="menu-header-bar">
+        <h2>SELECT LEVEL</h2>
+        <span id="selected-env-label" class="env-badge-label">FAIRY FOREST</span>
+      </div>
+
+      <div class="tier-buttons">
+        <button class="btn-tier active" data-tier="easy">Easy (1-33)</button>
+        <button class="btn-tier" data-tier="medium">Medium (34-66)</button>
+        <button class="btn-tier" data-tier="hard">Hard (67-100)</button>
+      </div>
+
+      <div class="level-buttons" id="level-buttons-container"></div>
+
+      <div class="nav-actions-row">
+        <button id="btn-back-to-env" class="btn-nav-secondary">ENVIRONMENTS</button>
+        <button id="btn-start-game" class="btn-hero-race">
+          <span class="play-icon">RACE NOW</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- IN-GAME HUD (NO GARAGE/HOME BUTTONS ON RACE SCREEN) -->
+    <div id="screen-hud" class="ui-screen">
+      <!-- Top Progress & Cash -->
+      <div class="hud-top">
+        <div class="hud-top-left">
+          <div class="cash-card">
+            <svg class="gold-coin-svg" viewBox="0 0 24 24" width="22" height="22" fill="none">
+              <circle cx="12" cy="12" r="10" fill="url(#goldGrad)" stroke="#FEF08A" stroke-width="1.5"/>
+              <circle cx="12" cy="12" r="7.5" stroke="#D97706" stroke-width="1" stroke-dasharray="2 1"/>
+              <polygon points="12,6.5 13.5,10 17,10 14,12 15.5,15.5 12,13.5 8.5,15.5 10,12 7,10 10.5,10" fill="#78350F"/>
+            </svg>
+            <span id="hud-cash-counter">0</span>
+          </div>
+
+          <div class="progress-bar-container">
+            <span class="progress-text">TRACK PROGRESS</span>
+            <div class="progress-track">
+              <div id="hud-progress-fill" class="progress-fill" style="width: 0%;"></div>
+              <div id="hud-progress-marker" class="progress-marker" style="left: 0%;">CAR</div>
+            </div>
+            <span id="hud-progress-percent" class="percent-text">0%</span>
+          </div>
+        </div>
+
+        <div class="hud-top-right">
+          <!-- Clean HUD Top Bar: ONLY Camera Toggle & Settings -->
+          <button id="hud-cam-toggle" class="hud-cam-btn">CAM: TPP</button>
+          <button id="hud-btn-settings" class="btn-settings-icon" title="Settings">SET</button>
+          <div class="level-badge" id="hud-level-title">LVL 1</div>
+        </div>
+      </div>
+
+      <!-- Bottom Speed & Nitro Gauge -->
+      <div class="hud-bottom">
+        <div class="speedometer-card">
+          <div class="speed-value" id="hud-speed-val">0</div>
+          <div class="speed-unit">KM/H</div>
+        </div>
+
+        <div id="hud-combo-card" class="combo-card hidden">
+          <span id="hud-combo-val" class="combo-text">COMBO x2</span>
+        </div>
+
+        <div id="hud-airtime-card" class="airtime-card hidden">
+          <span id="hud-airtime-val" class="airtime-text">0.0s AIR!</span>
+        </div>
+
+        <div class="nitro-card">
+          <div class="nitro-header">
+            <span>NITRO BOOST</span>
+            <span id="hud-nitro-state">SPACE / TAP</span>
+          </div>
+          <div class="nitro-bar">
+            <div id="hud-nitro-fill" class="nitro-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Touch Control Overlay for Mobile (SWAPPED: NITRO on LEFT, DRIVE GAS on RIGHT) -->
+      <div id="touch-controls" class="touch-overlay">
+        <div id="touch-steer-group" class="touch-steer-group">
+          <div id="touch-steer-left" class="touch-zone steer-left"><span>STEER L</span></div>
+          <div id="touch-steer-right" class="touch-zone steer-right"><span>STEER R</span></div>
+          <div id="virtual-wheel" class="touch-zone wheel-zone" style="display: none;">
+            <div class="wheel-inner">WHEEL</div>
+          </div>
+        </div>
+        <div id="touch-drive-group" class="touch-drive-group">
+          <div id="touch-boost" class="touch-zone boost-btn"><span>NITRO</span></div>
+          <div id="touch-gas" class="touch-zone gas-btn"><span>DRIVE GAS</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABBED SETTINGS MODAL -->
+    <div id="modal-settings" class="ui-screen modal-overlay">
+      <div class="modal-card settings-card">
+        <div class="settings-header">
+          <h2 class="supercell-title">GAME SETTINGS</h2>
+          <button id="btn-close-settings" class="btn-close-modal">X</button>
+        </div>
+
+        <div class="settings-tabs-header">
+          <button class="tab-btn active" data-tab="controls">CONTROLS</button>
+          <button class="tab-btn" data-tab="graphics">GRAPHICS</button>
+          <button class="tab-btn" data-tab="audio">AUDIO</button>
+        </div>
+
+        <div class="settings-tab-content">
+          <!-- Controls Tab -->
+          <div id="tab-pane-controls" class="settings-tab-pane active">
+            <div class="setting-item">
+              <label>Control Steering Method:</label>
+              <select id="setting-control-mode">
+                <option value="buttons">Touch On-Screen Buttons</option>
+                <option value="tilt">Gyroscope Device Tilt</option>
+                <option value="wheel">Virtual Steering Wheel</option>
+              </select>
+            </div>
+            <button id="btn-calibrate-tilt" class="btn-settings-action">Calibrate Neutral Tilt</button>
+          </div>
+
+          <!-- Graphics Tab -->
+          <div id="tab-pane-graphics" class="settings-tab-pane">
+            <div class="setting-item">
+              <label>Environment Realm:</label>
+              <select id="setting-theme">
+                <option value="golden_bay">Golden Bay Coast</option>
+                <option value="rooftop">Metropolis Rooftop</option>
+                <option value="lakeside_sunrise">Lakeside Sunrise</option>
+                <option value="clear_night">Midnight Starlight</option>
+                <option value="alpine_hill">Alpine Ridge</option>
+                <option value="skyline_sunset">Skyline Sunset</option>
+                <option value="venice_twilight">Venice Twilight</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Audio Tab -->
+          <div id="tab-pane-audio" class="settings-tab-pane">
+            <div class="setting-item">
+              <label>Master Sound Volume:</label>
+              <input type="range" id="setting-master-vol" min="0" max="1" step="0.05" value="0.8">
+            </div>
+            <button id="setting-sound" class="btn-settings-action">Sound: ON</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STORE MODAL -->
+    <div id="modal-shop" class="ui-screen modal-overlay">
+      <div class="modal-card shop-card">
+        <div class="settings-header">
+          <h2 class="supercell-title">PRO STORE</h2>
+          <button id="btn-close-shop" class="btn-close-modal">X</button>
+        </div>
+
+        <div class="iap-grid">
+          <div class="iap-card">
+            <h3>VIP NO ADS PASS</h3>
+            <p>Remove all forced interstitial ads forever.</p>
+            <button class="btn-buy-iap" data-iap="no_ads">BUY $1.99</button>
+          </div>
+          <div class="iap-card">
+            <h3>STARTER COIN PACK</h3>
+            <p>100,000 Gold Coins for instant upgrades.</p>
+            <button class="btn-buy-iap" data-iap="coin_pack_1">BUY $0.99</button>
+          </div>
+          <div class="iap-card">
+            <h3>ULTIMATE PRO GARAGE</h3>
+            <p>Unlock all 6 vehicles &amp; custom paints.</p>
+            <button class="btn-buy-iap" data-iap="all_cars_pass">BUY $4.99</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. VICTORY MODAL OVERLAY -->
+    <div id="modal-victory" class="ui-screen modal-overlay">
+      <div class="modal-card victory-card">
+        <h1 class="vic-title">STAGE COMPLETE</h1>
+        <div class="vic-stars">
+          <span class="star active">STAR</span>
+          <span class="star active">STAR</span>
+          <span class="star active">STAR</span>
+        </div>
+
+        <div class="vic-stats">
+          <div class="stat-box">
+            <span class="stat-label">TIME</span>
+            <span id="vic-time" class="stat-val">00:45.2</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">REWARD</span>
+            <span id="vic-cash" class="stat-val">+1,000</span>
+          </div>
+        </div>
+
+        <button id="btn-double-coins" class="btn-reward-double">CLAIM 2X REWARD (AD)</button>
+
+        <div class="vic-actions">
+          <button id="btn-garage-victory" class="btn-vic-secondary">GARAGE</button>
+          <button id="btn-retry-victory" class="btn-vic-secondary">RETRY</button>
+          <button id="btn-next-level" class="btn-vic-primary">NEXT LEVEL</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. FAIL / CRASH MODAL OVERLAY -->
+    <div id="modal-fail" class="ui-screen modal-overlay">
+      <div class="modal-card fail-card">
+        <h1 class="fail-title">TRACK WASTED</h1>
+        <p class="fail-sub">Vehicle plummeted into the skyway void!</p>
+
+        <div class="fail-stats">
+          <div class="stat-box">
+            <span class="stat-label">DISTANCE</span>
+            <span id="fail-distance" class="stat-val">68%</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">COINS</span>
+            <span id="fail-cash" class="stat-val">+250</span>
+          </div>
+        </div>
+
+        <button id="btn-revive-continue" class="btn-reward-double">REVIVE &amp; CONTINUE (AD)</button>
+
+        <div class="fail-actions">
+          <button id="btn-back-to-garage-fail" class="btn-fail-secondary">GARAGE</button>
+          <button id="btn-retry-fail" class="btn-fail-primary">TRY AGAIN</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <svg style="width:0;height:0;position:absolute;">
+    <defs>
+      <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FDE047" />
+        <stop offset="50%" stop-color="#EAB308" />
+        <stop offset="100%" stop-color="#CA8A04" />
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
