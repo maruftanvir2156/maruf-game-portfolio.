@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { DeviceTier } from './DeviceTier.js';
 
 const BASE = import.meta.env.BASE_URL || './';
@@ -210,61 +211,67 @@ export class HDRIEnvironment {
       this.ambientLight.color.setHex(config.ambientColor);
     }
 
-    const textureLoader = new THREE.TextureLoader();
     const envPath = resolveAssetPath(config.file);
+    const isHDR = envPath.toLowerCase().endsWith('.hdr');
     console.log(`[HDRIEnvironment] Loading Environment [${config.name}]:`, envPath);
 
-    textureLoader.load(
-      envPath,
-      (texture) => {
-        texture.mapping = THREE.EquirectangularReflectionMapping;
+    const onTextureLoaded = (texture) => {
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+      if (!isHDR) {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.generateMipmaps = false;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
-
         texture.center.set(0.5, 0.5);
         texture.rotation = 0;
         texture.offset.set(0, 0);
+      }
 
-        this.scene.background = texture;
-        this._textureCache.set(config.file, texture);
+      this.scene.background = texture;
+      this._textureCache.set(config.file, texture);
 
-        if (this.renderer) {
-          try {
-            const tempGenerator = new THREE.PMREMGenerator(this.renderer);
-            tempGenerator.compileEquirectangularShader();
-            const envMap = tempGenerator.fromEquirectangular(texture).texture;
-            this.scene.environment = envMap;
-            this._envMapCache.set(config.file, envMap);
-            this._currentEnvMap = envMap;
-            tempGenerator.dispose();
-          } catch (e) {
-            console.warn('[HDRIEnvironment] PMREM generation failed, using raw texture fallback:', e);
-            this.scene.environment = texture;
-            this._envMapCache.set(config.file, texture);
-          }
-        } else {
+      if (this.renderer) {
+        try {
+          const tempGenerator = new THREE.PMREMGenerator(this.renderer);
+          tempGenerator.compileEquirectangularShader();
+          const envMap = tempGenerator.fromEquirectangular(texture).texture;
+          this.scene.environment = envMap;
+          this._envMapCache.set(config.file, envMap);
+          this._currentEnvMap = envMap;
+          tempGenerator.dispose();
+        } catch (e) {
+          console.warn('[HDRIEnvironment] PMREM generation fallback:', e);
           this.scene.environment = texture;
           this._envMapCache.set(config.file, texture);
         }
-
-        if (this.sunLight) {
-          this.sunLight.color.setHex(config.sunColor);
-          this.sunLight.intensity = config.sunIntensity;
-        }
-        if (this.ambientLight) {
-          this.ambientLight.color.setHex(config.ambientColor);
-        }
-        this.scene.fog = new THREE.FogExp2(config.fogColor, config.fogDensity);
-
-        console.log(`✅ PMREM HDRI ACTIVE & CACHED: ${config.name}`);
-      },
-      undefined,
-      (err) => {
-        console.warn(`[HDRIEnvironment] Notice: HDRI image load warning for ${config.file} (using atmospheric fallback):`, err);
+      } else {
+        this.scene.environment = texture;
+        this._envMapCache.set(config.file, texture);
       }
-    );
+
+      if (this.sunLight) {
+        this.sunLight.color.setHex(config.sunColor);
+        this.sunLight.intensity = config.sunIntensity;
+      }
+      if (this.ambientLight) {
+        this.ambientLight.color.setHex(config.ambientColor);
+      }
+      this.scene.fog = new THREE.FogExp2(config.fogColor, config.fogDensity);
+
+      console.log(`✅ 360° Panorama HDRI ACTIVE & CACHED: ${config.name}`);
+    };
+
+    const onError = (err) => {
+      console.warn(`[HDRIEnvironment] Notice: HDRI image load warning for ${config.file} (using atmospheric fallback):`, err);
+    };
+
+    if (isHDR) {
+      const rgbeLoader = new RGBELoader();
+      rgbeLoader.load(envPath, onTextureLoaded, undefined, onError);
+    } else {
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load(envPath, onTextureLoaded, undefined, onError);
+    }
   }
 
   updateCityPosition(playerZ, cameraPosition, playerSteerAngle = 0) {

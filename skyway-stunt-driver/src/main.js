@@ -146,8 +146,8 @@ class SkywayGameEngine {
       this.animate();
     };
 
-    // Hard 2-second timeout guarantee
-    const loadingTimeout = setTimeout(forceStart, 2000);
+    // 10-second timeout guarantee for network loads
+    const loadingTimeout = setTimeout(forceStart, 10000);
 
     try {
       console.log('[SkywayGameEngine] Booting Asset Pipeline...');

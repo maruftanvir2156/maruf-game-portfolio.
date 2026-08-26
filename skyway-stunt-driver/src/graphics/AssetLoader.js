@@ -206,7 +206,6 @@ class AssetLoaderClass {
       const done = (result, isError = false) => {
         if (settled) return;
         settled = true;
-        clearTimeout(assetTimer);
         this.cache.set(key, result);
         this._incrementProgress(key, isError);
         resolve(result);
