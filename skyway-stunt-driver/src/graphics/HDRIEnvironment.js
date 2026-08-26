@@ -20,8 +20,10 @@ export const ENVIRONMENTS = {
     sunColor: 0xffd1a4,
     sunIntensity: 2.2,
     ambientColor: 0xffe4ca,
-    fogColor: 0xdcae8f,
-    fogDensity: 0.00004
+    fogColor: 0x161b26,
+    fogDensity: 0.0055,
+    cloudBase: 0x0f172a,
+    cloudWave: 0x38bdf8
   },
   rooftop: {
     id: 'rooftop',
@@ -30,8 +32,10 @@ export const ENVIRONMENTS = {
     sunColor: 0xffffff,
     sunIntensity: 2.5,
     ambientColor: 0xdbeafe,
-    fogColor: 0x93c5fd,
-    fogDensity: 0.00003
+    fogColor: 0x161b26,
+    fogDensity: 0.0055,
+    cloudBase: 0x0f172a,
+    cloudWave: 0x60a5fa
   },
   lakeside_sunrise: {
     id: 'lakeside_sunrise',
@@ -40,8 +44,10 @@ export const ENVIRONMENTS = {
     sunColor: 0xffb700,
     sunIntensity: 2.0,
     ambientColor: 0xfed7aa,
-    fogColor: 0xfb923c,
-    fogDensity: 0.00005
+    fogColor: 0x221a28,
+    fogDensity: 0.0055,
+    cloudBase: 0x181222,
+    cloudWave: 0xfb923c
   },
   clear_night: {
     id: 'clear_night',
@@ -50,8 +56,10 @@ export const ENVIRONMENTS = {
     sunColor: 0x38bdf8,
     sunIntensity: 0.8,
     ambientColor: 0x0f172a,
-    fogColor: 0x020617,
-    fogDensity: 0.00006
+    fogColor: 0x090e1a,
+    fogDensity: 0.0055,
+    cloudBase: 0x020617,
+    cloudWave: 0x6366f1
   },
   alpine_hill: {
     id: 'alpine_hill',
@@ -60,8 +68,10 @@ export const ENVIRONMENTS = {
     sunColor: 0xfffaed,
     sunIntensity: 2.4,
     ambientColor: 0xe0f2fe,
-    fogColor: 0xbae6fd,
-    fogDensity: 0.00003
+    fogColor: 0x141e2e,
+    fogDensity: 0.0055,
+    cloudBase: 0x0b1322,
+    cloudWave: 0x38bdf8
   },
   skyline_sunset: {
     id: 'skyline_sunset',
@@ -70,8 +80,10 @@ export const ENVIRONMENTS = {
     sunColor: 0xf97316,
     sunIntensity: 2.1,
     ambientColor: 0xfde047,
-    fogColor: 0xea580c,
-    fogDensity: 0.00005
+    fogColor: 0x24121d,
+    fogDensity: 0.0055,
+    cloudBase: 0x180c14,
+    cloudWave: 0xf43f5e
   },
   venice_twilight: {
     id: 'venice_twilight',
@@ -80,8 +92,10 @@ export const ENVIRONMENTS = {
     sunColor: 0xf43f5e,
     sunIntensity: 1.9,
     ambientColor: 0xfae8ff,
-    fogColor: 0x881337,
-    fogDensity: 0.00005
+    fogColor: 0x1e1022,
+    fogDensity: 0.0055,
+    cloudBase: 0x120a16,
+    cloudWave: 0xa855f7
   }
 };
 
@@ -99,6 +113,8 @@ export class HDRIEnvironment {
     this.hemiLight = null;
     this.fillLight = null;
 
+    this.cloudPlaneMesh = null;
+    this.cloudMaterial = null;
     this.groundPlaneMesh = null;
 
     // PMREMGenerator & Environment Caching for Zero-Stall Level Transitions
@@ -108,17 +124,18 @@ export class HDRIEnvironment {
     this._envMapCache = new Map();
 
     if (this.renderer) {
+      this.renderer.setClearColor(0x161b26, 1);
       this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
       this.pmremGenerator.compileEquirectangularShader();
     }
 
     this.initLights();
-    this.initGroundPlane();
+    this.initCloudSeaFloor();
     this.setTheme('golden_bay');
   }
 
   initLights() {
-    this.hemiLight = new THREE.HemisphereLight(0xffffff, 0x334155, 1.2);
+    this.hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 1.3);
     this.scene.add(this.hemiLight);
 
     this.sunLight = new THREE.DirectionalLight(0xfff7ed, 2.5);
@@ -146,22 +163,91 @@ export class HDRIEnvironment {
     this.scene.add(this.ambientLight);
   }
 
-  initGroundPlane() {
-    const geo = new THREE.PlaneGeometry(5000, 5000);
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0x050811,
-      roughness: 0.8,
-      metalness: 0.2
+  initCloudSeaFloor() {
+    // Procedural infinite atmospheric cloud / sea floor at Y = -60
+    const cloudGeo = new THREE.PlaneGeometry(3500, 3500, 40, 40);
+
+    this.cloudMaterial = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      uniforms: {
+        uTime: { value: 0 },
+        uColorBase: { value: new THREE.Color(0x0f172a) },
+        uColorWave: { value: new THREE.Color(0x38bdf8) },
+        uColorFog: { value: new THREE.Color(0x161b26) }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying vec3 vWorldPosition;
+        uniform float uTime;
+
+        void main() {
+          vUv = uv;
+          vec3 pos = position;
+          // Rolling atmospheric cloud wave ripples
+          float wave = sin(pos.x * 0.006 + uTime * 0.3) * cos(pos.y * 0.006 + uTime * 0.25) * 8.0;
+          pos.z += wave;
+          vWorldPosition = (modelMatrix * vec4(pos, 1.0)).xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        varying vec3 vWorldPosition;
+        uniform float uTime;
+        uniform vec3 uColorBase;
+        uniform vec3 uColorWave;
+        uniform vec3 uColorFog;
+
+        void main() {
+          float dist = length(vUv - 0.5) * 2.0;
+          float alpha = smoothstep(1.0, 0.15, dist);
+
+          float ripple = sin(vWorldPosition.x * 0.012 + uTime * 0.4) * cos(vWorldPosition.z * 0.012 + uTime * 0.3);
+          ripple = ripple * 0.5 + 0.5;
+
+          // Stylized glowing grid coordinates
+          vec2 gridUv = fract(vWorldPosition.xz * 0.02);
+          float grid = (step(0.97, gridUv.x) + step(0.97, gridUv.y)) * 0.12;
+
+          vec3 col = mix(uColorBase, uColorWave, ripple * 0.5);
+          col += uColorWave * grid;
+          col = mix(col, uColorFog, clamp((vWorldPosition.y + 70.0) / 30.0, 0.0, 0.6));
+
+          gl_FragColor = vec4(col, alpha * 0.92);
+        }
+      `
     });
-    this.groundPlaneMesh = new THREE.Mesh(geo, mat);
+
+    this.cloudPlaneMesh = new THREE.Mesh(cloudGeo, this.cloudMaterial);
+    this.cloudPlaneMesh.rotation.x = -Math.PI / 2;
+    this.cloudPlaneMesh.position.set(0, -60.0, 0);
+    this.scene.add(this.cloudPlaneMesh);
+
+    // Deep lower bedrock plane at Y = -120 to eliminate pitch black abyss
+    const deepGeo = new THREE.PlaneGeometry(5000, 5000);
+    const deepMat = new THREE.MeshBasicMaterial({ color: 0x0b0f19 });
+    this.groundPlaneMesh = new THREE.Mesh(deepGeo, deepMat);
     this.groundPlaneMesh.rotation.x = -Math.PI / 2;
-    this.groundPlaneMesh.position.y = -150.0;
-    this.groundPlaneMesh.receiveShadow = true;
+    this.groundPlaneMesh.position.set(0, -120.0, 0);
     this.scene.add(this.groundPlaneMesh);
   }
 
   setTheme(themeKey) {
     const config = ENVIRONMENTS[themeKey] || ENVIRONMENTS.golden_bay;
+
+    // Update cloud floor colors
+    if (this.cloudMaterial && this.cloudMaterial.uniforms) {
+      if (config.cloudBase) this.cloudMaterial.uniforms.uColorBase.value.setHex(config.cloudBase);
+      if (config.cloudWave) this.cloudMaterial.uniforms.uColorWave.value.setHex(config.cloudWave);
+      if (config.fogColor) this.cloudMaterial.uniforms.uColorFog.value.setHex(config.fogColor);
+    }
+
+    if (this.renderer) {
+      this.renderer.setClearColor(config.fogColor || 0x161b26, 1);
+    }
+    this.scene.fog = new THREE.FogExp2(config.fogColor || 0x161b26, config.fogDensity || 0.0055);
 
     // Fast-path: if already on this theme and environment is active, return in 0ms
     if (this.currentTheme === themeKey && this.scene.background && (this.scene.background.isTexture || this.scene.background.isColor)) {
@@ -172,7 +258,6 @@ export class HDRIEnvironment {
       if (this.ambientLight) {
         this.ambientLight.color.setHex(config.ambientColor);
       }
-      this.scene.fog = new THREE.FogExp2(config.fogColor || 0xdcae8f, config.fogDensity || 0.00004);
       return;
     }
 
@@ -193,15 +278,13 @@ export class HDRIEnvironment {
       if (this.ambientLight) {
         this.ambientLight.color.setHex(config.ambientColor);
       }
-      this.scene.fog = new THREE.FogExp2(config.fogColor || 0xdcae8f, config.fogDensity || 0.00004);
       console.log(`[HDRIEnvironment] Theme '${config.name}' restored INSTANTLY from cache ✓`);
       return;
     }
 
     // Set immediate sky background color & fog so screen is NEVER blank white
-    const skyColor = new THREE.Color(config.fogColor || 0x0f172a);
+    const skyColor = new THREE.Color(config.fogColor || 0x161b26);
     this.scene.background = skyColor;
-    this.scene.fog = new THREE.FogExp2(config.fogColor || 0xdcae8f, config.fogDensity || 0.00004);
 
     if (this.sunLight) {
       this.sunLight.color.setHex(config.sunColor);
@@ -275,14 +358,27 @@ export class HDRIEnvironment {
   }
 
   updateCityPosition(playerZ, cameraPosition, playerSteerAngle = 0) {
+    if (this.cloudPlaneMesh) {
+      this.cloudPlaneMesh.position.z = playerZ;
+      if (cameraPosition) {
+        this.cloudPlaneMesh.position.x = cameraPosition.x;
+      }
+    }
     if (this.groundPlaneMesh) {
       this.groundPlaneMesh.position.z = playerZ;
+      if (cameraPosition) {
+        this.groundPlaneMesh.position.x = cameraPosition.x;
+      }
     }
-    // NO-OP: scene.background handles infinite 360 rendering natively
+    if (this.cloudMaterial && this.cloudMaterial.uniforms?.uTime) {
+      this.cloudMaterial.uniforms.uTime.value += 0.016;
+    }
   }
 
-  update() {
-    // NO-OP: scene.background handles infinite 360 rendering natively
+  update(dt = 0.016) {
+    if (this.cloudMaterial && this.cloudMaterial.uniforms?.uTime) {
+      this.cloudMaterial.uniforms.uTime.value += dt;
+    }
   }
 
   updateLightPosition(targetPosition) {
